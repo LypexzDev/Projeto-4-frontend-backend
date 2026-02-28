@@ -14,6 +14,8 @@ def client(tmp_path_factory):
     os.environ["LOJACONTROL_DATABASE_URL"] = f"sqlite:///{db_file.as_posix()}"
     os.environ["LOJACONTROL_JWT_SECRET"] = "test-secret-key"
     os.environ["LOJACONTROL_SKIP_LEGACY_IMPORT"] = "1"
+    os.environ["LOJACONTROL_RATE_LIMIT_REQUESTS"] = "1000"
+    os.environ["LOJACONTROL_RATE_LIMIT_WINDOW_SECONDS"] = "60"
     os.environ["LOJA_ADMIN_EMAIL"] = "admin@lojacontrol.local"
     os.environ["LOJA_ADMIN_PASSWORD"] = "admin123"
 
@@ -25,4 +27,3 @@ def client(tmp_path_factory):
 
     with TestClient(app) as test_client:
         yield test_client
-

@@ -3,10 +3,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.api.deps import extract_token, get_current_account
+from app.api.deps import get_current_account
 from app.db.models import Account
 from app.db.session import get_db
-from app.schemas.auth import LoginPayload, RegisterUserPayload
+from app.schemas.auth import LoginPayload, RefreshTokenPayload, RegisterUserPayload
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -33,6 +33,11 @@ def auth_me(account: Account = Depends(get_current_account)):
 
 
 @router.post("/logout")
-def auth_logout(_: str = Depends(extract_token)):
+def auth_logout(account: Account = Depends(get_current_account), db: Session = Depends(get_db)):
+    auth_service.logout_account(db, account)
     return {"ok": True}
 
+
+@router.post("/refresh")
+def auth_refresh(payload: RefreshTokenPayload, db: Session = Depends(get_db)):
+    return auth_service.refresh_session(db, payload.refresh_token)

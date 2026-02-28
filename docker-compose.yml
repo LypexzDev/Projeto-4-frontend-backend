@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16
+    container_name: lojacontrol_db
+    environment:
+      POSTGRES_DB: lojacontrol
+      POSTGRES_USER: lojacontrol
+      POSTGRES_PASSWORD: lojacontrol
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lojacontrol -d lojacontrol"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    container_name: lojacontrol_app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      LOJACONTROL_ENV: production
+      LOJACONTROL_DATABASE_URL: postgresql+psycopg://lojacontrol:lojacontrol@db:5432/lojacontrol
+      LOJACONTROL_JWT_SECRET: change-this-secret-in-production
+      LOJACONTROL_JWT_ALGORITHM: HS256
+      LOJACONTROL_ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      LOJACONTROL_REFRESH_TOKEN_EXPIRE_DAYS: 14
+      LOJACONTROL_CORS_ORIGINS: http://localhost:8000
+      LOJA_ADMIN_EMAIL: admin@lojacontrol.local
+      LOJA_ADMIN_PASSWORD: admin123
+    ports:
+      - "8000:8000"
+
+volumes:
+  pg_data:

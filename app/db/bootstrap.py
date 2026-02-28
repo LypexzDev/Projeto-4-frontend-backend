@@ -309,8 +309,9 @@ def _ensure_admin_account(db: Session) -> None:
 
 
 def initialize_database() -> None:
-    Base.metadata.create_all(bind=engine)
     settings = get_settings()
+    if settings.auto_create_schema:
+        Base.metadata.create_all(bind=engine)
 
     with SessionLocal() as db:
         try:

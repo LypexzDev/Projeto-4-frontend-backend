@@ -1,32 +1,49 @@
-# LojaControl
+# LojaControl - Fullstack Portfolio Project
 
 [![CI](https://github.com/LypexzDev/Projeto-4-frontend-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/LypexzDev/Projeto-4-frontend-backend/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite&logoColor=white)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.x-D71F00)
+![Auth](https://img.shields.io/badge/Auth-JWT%20%2B%20Refresh-black)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+![GitHub last commit](https://img.shields.io/github/last-commit/LypexzDev/Projeto-4-frontend-backend)
+![GitHub repo size](https://img.shields.io/github/repo-size/LypexzDev/Projeto-4-frontend-backend)
 
-Aplicacao full stack com painel administrativo e area do cliente para fluxo completo de loja: autenticacao, catalogo, pedidos e gestao.
+Projeto fullstack de loja virtual com painel admin e area cliente.
+O foco e demonstrar arquitetura backend profissional, seguranca, testes, dockerizacao e readiness para deploy.
 
-## Destaques
+## Quick Links
 
-- Arquitetura backend modular (`routers`, `services`, `schemas`, `db`, `core`)
-- Persistencia com SQLite + SQLAlchemy
-- Autenticacao com JWT + hash seguro com `bcrypt`
-- Frontend consumindo API real com `fetch` via cliente dedicado
-- Testes automatizados com `pytest` + `TestClient`
-- CI no GitHub Actions
+- [Arquitetura](#arquitetura)
+- [Como Rodar Local](#como-rodar-local)
+- [Docker](#docker)
+- [Migrations Alembic](#migrations-alembic)
+- [Testes](#testes)
+- [Deploy](#deploy)
+- [Documentacao Extra](#documentacao-extra)
+
+## Highlights
+
+- Arquitetura em camadas: `routes`, `services`, `models`, `schemas`, `core`
+- SQLAlchemy com SQLite/PostgreSQL
+- JWT com access token + refresh token rotativo
+- Handlers globais de erro + logging estruturado
+- Rate limiting
+- Paginacao, filtros e busca
+- Testes automatizados com cobertura
+- CI com GitHub Actions
+- Dockerfile + docker-compose
 
 ## Stack
 
-- Frontend: HTML5, CSS3, JavaScript
 - Backend: FastAPI
-- Database: SQLite
 - ORM: SQLAlchemy 2.x
-- Auth: JWT (`python-jose`) + `bcrypt`
-- Testes: `pytest`, `httpx`, `TestClient`
+- Migrations: Alembic
+- Auth: `python-jose` + `passlib[bcrypt]`
+- Frontend: HTML, CSS, JavaScript modular
+- Testes: `pytest`, `pytest-cov`, `httpx`, `TestClient`
 
-## Estrutura
+## Arquitetura
 
 ```text
 .
@@ -38,86 +55,162 @@ Aplicacao full stack com painel administrativo e area do cliente para fluxo comp
 |   |-- db/
 |   |-- schemas/
 |   `-- services/
+|-- alembic/
 |-- tests/
+|-- docs/
 |-- apiClient.js
 |-- script.js
-|-- style.css
-|-- index.html
-|-- testebackend.py
-`-- requirements.txt
+|-- Dockerfile
+|-- docker-compose.yml
+`-- testebackend.py
 ```
 
-Documentacao tecnica: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+```mermaid
+flowchart LR
+  UI[Frontend] --> API[FastAPI Routers]
+  API --> SVC[Services]
+  SVC --> ORM[SQLAlchemy]
+  ORM --> DB[(SQLite/PostgreSQL)]
+  API --> MW[Middlewares]
+  API --> AUTH[JWT + Refresh Token]
+```
 
-## Como executar
-
-1. Criar e ativar ambiente virtual:
+## Como Rodar Local
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
-
-2. Instalar dependencias:
-
-```powershell
 pip install -r requirements.txt
-```
-
-3. Subir a API:
-
-```powershell
 python -m uvicorn testebackend:app --host 127.0.0.1 --port 8000 --reload
 ```
-
-4. Acessar:
 
 - App: `http://127.0.0.1:8000`
 - Swagger: `http://127.0.0.1:8000/docs`
 
+## Variaveis de Ambiente
+
+Arquivos base:
+
+- `.env.example`
+- `.env.development.example`
+- `.env.production.example`
+
+Principais variaveis:
+
+- `LOJACONTROL_ENV`
+- `LOJACONTROL_DATABASE_URL`
+- `LOJACONTROL_JWT_SECRET`
+- `LOJACONTROL_ACCESS_TOKEN_EXPIRE_MINUTES`
+- `LOJACONTROL_REFRESH_TOKEN_EXPIRE_DAYS`
+- `LOJACONTROL_CORS_ORIGINS`
+- `LOJACONTROL_RATE_LIMIT_*`
+- `LOJACONTROL_AUTO_CREATE_SCHEMA`
+
+## Migrations Alembic
+
+```powershell
+alembic revision --autogenerate -m "descricao"
+alembic upgrade head
+alembic downgrade -1
+```
+
+## Docker
+
+Subir app + postgres:
+
+```powershell
+docker compose up --build
+```
+
+Parar:
+
+```powershell
+docker compose down
+```
+
+Limpar volumes:
+
+```powershell
+docker compose down -v
+```
+
 ## Testes
 
 ```powershell
-pytest -q
+pytest
+pytest --cov=app --cov-report=term-missing
 ```
 
-## Configuracao de ambiente
-
-Copie `.env.example` e ajuste valores conforme seu ambiente.
-
-Variaveis disponiveis:
-
-- `LOJACONTROL_DATABASE_URL` (ex.: `sqlite:///C:/caminho/loja.db`)
-- `LOJACONTROL_JWT_SECRET`
-- `LOJACONTROL_JWT_ALGORITHM`
-- `LOJACONTROL_ACCESS_TOKEN_EXPIRE_MINUTES`
-- `LOJACONTROL_SKIP_LEGACY_IMPORT`
-- `LOJA_ADMIN_EMAIL`
-- `LOJA_ADMIN_PASSWORD`
-
-Credenciais admin padrao:
-
-- Email: `admin@lojacontrol.local`
-- Senha: `admin123`
-
-## Endpoints principais
+## Endpoints de Destaque
 
 - `POST /auth/register-user`
 - `POST /auth/login-user`
 - `POST /auth/login-admin`
-- `GET /auth/me`
-- `GET /shop/produtos`
-- `POST /shop/pedidos`
-- `GET /admin/resumo`
-- `POST /admin/produtos`
+- `POST /auth/refresh`
+- `GET /shop/produtos/paginated`
+- `GET /admin/usuarios/paginated`
+- `GET /admin/pedidos/paginated`
 
-## Roadmap
+## cURL rapido
 
-- [ ] Deploy em nuvem (Render/Railway)
-- [ ] Migrations com Alembic
-- [ ] Cobertura de testes maior (edge cases e autorizacao)
-- [ ] Pipeline com lint/format
+```bash
+curl -X POST http://127.0.0.1:8000/auth/login-admin \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@lojacontrol.local","password":"admin123"}'
+```
+
+```bash
+curl -X POST http://127.0.0.1:8000/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token":"SEU_REFRESH_TOKEN"}'
+```
+
+## Deploy
+
+### Render
+
+1. Criar Web Service apontando para este repo.
+2. Build command: `pip install -r requirements.txt`
+3. Start command: `uvicorn testebackend:app --host 0.0.0.0 --port $PORT`
+4. Configurar env vars.
+
+### Railway
+
+1. Importar repo.
+2. Adicionar PostgreSQL.
+3. Configurar `LOJACONTROL_DATABASE_URL` e segredos JWT.
+
+### VPS
+
+1. Subir app com `uvicorn`/`gunicorn`.
+2. Configurar Nginx como reverse proxy.
+3. Configurar TLS (Certbot) e systemd.
+
+## Screenshots
+
+Coloque imagens em `docs/images/`:
+
+- `docs/images/login.png`
+- `docs/images/admin-dashboard.png`
+- `docs/images/shop.png`
+
+## Documentacao Extra
+
+- [Arquitetura detalhada](./docs/ARCHITECTURE.md)
+- [Roadmap](./docs/ROADMAP.md)
+- [Contribuicao](./CONTRIBUTING.md)
+- [Seguranca](./SECURITY.md)
+- [Changelog](./CHANGELOG.md)
+
+## Como Apresentar em Entrevista
+
+Pitch curto:
+
+1. "Comecei com backend simples e JSON."
+2. "Evolui para arquitetura em camadas com SQLAlchemy e Alembic."
+3. "Implementei JWT com refresh token, rate limiting, logging e testes."
+4. "Fechei com Docker, CI e docs de deploy."
 
 ## Licenca
 
-Este projeto esta sob a licenca MIT. Veja [LICENSE](./LICENSE).
+MIT - veja [LICENSE](./LICENSE).

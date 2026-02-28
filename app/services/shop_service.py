@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db.models import Account, Order, OrderItem, Product, User
@@ -65,6 +65,46 @@ def order_payload(order: Order) -> dict:
 def list_products(db: Session) -> list[dict]:
     products = db.scalars(select(Product).order_by(Product.id.asc())).all()
     return [product_payload(item) for item in products]
+
+
+def list_products_paginated(
+    db: Session,
+    page: int,
+    size: int,
+    search: str | None = None,
+    min_preco: float | None = None,
+    max_preco: float | None = None,
+) -> dict:
+    filters = []
+    if search:
+        pattern = f"%{search.strip().lower()}%"
+        filters.append(func.lower(Product.nome).like(pattern))
+    if min_preco is not None:
+        filters.append(Product.preco >= float(min_preco))
+    if max_preco is not None:
+        filters.append(Product.preco <= float(max_preco))
+
+    count_query = select(func.count(Product.id))
+    data_query = select(Product)
+    if filters:
+        count_query = count_query.where(*filters)
+        data_query = data_query.where(*filters)
+
+    total = int(db.scalar(count_query) or 0)
+    offset = (page - 1) * size
+
+    items = db.scalars(
+        data_query.order_by(Product.id.asc()).offset(offset).limit(size)
+    ).all()
+
+    pages = (total + size - 1) // size if total > 0 else 0
+    return {
+        "items": [product_payload(item) for item in items],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
+    }
 
 
 def get_user_profile(db: Session, account: Account) -> dict:
@@ -148,6 +188,32 @@ def list_user_orders(db: Session, account: Account) -> list[dict]:
         )
     ).all()
     return [order_payload(item) for item in orders]
+
+
+def list_user_orders_paginated(db: Session, account: Account, page: int, size: int) -> dict:
+    user = _get_user_for_account(db, account)
+
+    total = int(db.scalar(select(func.count(Order.id)).where(Order.usuario_id == user.id)) or 0)
+    offset = (page - 1) * size
+    orders = db.scalars(
+        select(Order)
+        .where(Order.usuario_id == user.id)
+        .order_by(Order.id.desc())
+        .offset(offset)
+        .limit(size)
+        .options(
+            selectinload(Order.user),
+            selectinload(Order.items).selectinload(OrderItem.product),
+        )
+    ).all()
+    pages = (total + size - 1) // size if total > 0 else 0
+    return {
+        "items": [order_payload(item) for item in orders],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
+    }
 
 
 def list_all_orders(db: Session) -> list[dict]:

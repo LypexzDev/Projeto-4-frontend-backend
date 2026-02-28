@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.db.models import Order, OrderItem, Product, SiteConfig, User
 from app.schemas.admin import ProdutoCreatePayload, ProdutoUpdatePayload, SiteConfigPayload
-from app.services.shop_service import list_all_orders, product_payload
+from app.services.shop_service import order_payload, product_payload
 
 
 def _round_money(value: float) -> float:
@@ -53,9 +53,78 @@ def list_users(db: Session) -> list[dict]:
     ]
 
 
+def list_users_paginated(db: Session, page: int, size: int, search: str | None = None) -> dict:
+    filters = []
+    if search:
+        pattern = f"%{search.strip().lower()}%"
+        filters.append(func.lower(User.nome).like(pattern) | func.lower(User.email).like(pattern))
+
+    count_query = select(func.count(User.id))
+    data_query = select(User)
+    if filters:
+        count_query = count_query.where(*filters)
+        data_query = data_query.where(*filters)
+
+    total = int(db.scalar(count_query) or 0)
+    offset = (page - 1) * size
+    users = db.scalars(data_query.order_by(User.id.asc()).offset(offset).limit(size)).all()
+    pages = (total + size - 1) // size if total > 0 else 0
+    return {
+        "items": [
+            {
+                "id": item.id,
+                "nome": item.nome,
+                "email": item.email,
+                "saldo": _round_money(item.saldo),
+            }
+            for item in users
+        ],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
+    }
+
+
 def list_products(db: Session) -> list[dict]:
     products = db.scalars(select(Product).order_by(Product.id.asc())).all()
     return [product_payload(item) for item in products]
+
+
+def list_products_paginated(
+    db: Session,
+    page: int,
+    size: int,
+    search: str | None = None,
+    min_preco: float | None = None,
+    max_preco: float | None = None,
+) -> dict:
+    filters = []
+    if search:
+        pattern = f"%{search.strip().lower()}%"
+        filters.append(func.lower(Product.nome).like(pattern))
+    if min_preco is not None:
+        filters.append(Product.preco >= float(min_preco))
+    if max_preco is not None:
+        filters.append(Product.preco <= float(max_preco))
+
+    count_query = select(func.count(Product.id))
+    data_query = select(Product)
+    if filters:
+        count_query = count_query.where(*filters)
+        data_query = data_query.where(*filters)
+
+    total = int(db.scalar(count_query) or 0)
+    offset = (page - 1) * size
+    products = db.scalars(data_query.order_by(Product.id.asc()).offset(offset).limit(size)).all()
+    pages = (total + size - 1) // size if total > 0 else 0
+    return {
+        "items": [product_payload(item) for item in products],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
+    }
 
 
 def create_product(db: Session, payload: ProdutoCreatePayload) -> dict:
@@ -104,7 +173,55 @@ def delete_product(db: Session, product_id: int) -> dict:
 
 
 def list_orders(db: Session) -> list[dict]:
-    return list_all_orders(db)
+    orders = db.scalars(
+        select(Order)
+        .order_by(Order.id.desc())
+        .options(
+            selectinload(Order.user),
+            selectinload(Order.items).selectinload(OrderItem.product),
+        )
+    ).all()
+    return [order_payload(item) for item in orders]
+
+
+def list_orders_paginated(
+    db: Session,
+    page: int,
+    size: int,
+    usuario_id: int | None = None,
+    min_total: float | None = None,
+    max_total: float | None = None,
+) -> dict:
+    filters = []
+    if usuario_id is not None:
+        filters.append(Order.usuario_id == usuario_id)
+    if min_total is not None:
+        filters.append(Order.total >= float(min_total))
+    if max_total is not None:
+        filters.append(Order.total <= float(max_total))
+
+    count_query = select(func.count(Order.id))
+    data_query = select(Order)
+    if filters:
+        count_query = count_query.where(*filters)
+        data_query = data_query.where(*filters)
+
+    total = int(db.scalar(count_query) or 0)
+    offset = (page - 1) * size
+    orders = db.scalars(
+        data_query.order_by(Order.id.desc()).offset(offset).limit(size).options(
+            selectinload(Order.user),
+            selectinload(Order.items).selectinload(OrderItem.product),
+        )
+    ).all()
+    pages = (total + size - 1) // size if total > 0 else 0
+    return {
+        "items": [order_payload(item) for item in orders],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
+    }
 
 
 def get_site_config(db: Session) -> dict:
@@ -127,4 +244,3 @@ def update_site_config(db: Session, payload: SiteConfigPayload) -> dict:
     db.commit()
     db.refresh(config)
     return _site_config_payload(config)
-

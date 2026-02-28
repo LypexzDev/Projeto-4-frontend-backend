@@ -7,6 +7,7 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
 
 const state = {
     token: null,
+    refreshToken: null,
     account: null,
     currentRole: null,
     currentView: null,
@@ -17,12 +18,13 @@ const state = {
 
 const apiClient = window.createLojaApiClient({
     getToken: () => state.token,
-    onUnauthorized: () => handleUnauthorized(),
+    onUnauthorized: () => {},
     onStatusChange: (isOnline) => setApiStatus(isOnline)
 });
 
 const elements = {
     notification: document.getElementById('notification'),
+    globalLoading: document.getElementById('global-loading'),
     apiChip: document.getElementById('api-chip'),
     authShell: document.getElementById('auth-shell'),
     appShell: document.getElementById('app-shell'),
@@ -107,6 +109,7 @@ const NAV_BY_ROLE = {
 };
 
 let notificationTimeout = null;
+let pendingRequests = 0;
 
 function setApiStatus(isOnline) {
     elements.apiChip.textContent = isOnline ? 'API conectada' : 'API offline';
@@ -133,6 +136,13 @@ function closeMobileMenu() {
     document.body.classList.remove('menu-open');
 }
 
+function setLoading(isLoading) {
+    if (!elements.globalLoading) {
+        return;
+    }
+    elements.globalLoading.classList.toggle('hidden', !isLoading);
+}
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -142,18 +152,21 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-function saveSessionToken(token) {
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ token }));
+function saveSessionTokens(token, refreshToken) {
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ token, refresh_token: refreshToken || null }));
 }
 
-function readSavedToken() {
+function readSavedSession() {
     try {
         const raw = localStorage.getItem(SESSION_STORAGE_KEY);
         if (!raw) {
             return null;
         }
         const parsed = JSON.parse(raw);
-        return parsed?.token || null;
+        return {
+            token: parsed?.token || null,
+            refresh_token: parsed?.refresh_token || null
+        };
     } catch {
         return null;
     }
@@ -165,6 +178,7 @@ function clearSessionToken() {
 
 function resetClientState() {
     state.token = null;
+    state.refreshToken = null;
     state.account = null;
     state.currentRole = null;
     state.currentView = null;
@@ -236,8 +250,61 @@ function handleUnauthorized() {
     showNotification('Sessao expirada. Faca login novamente.', 'error');
 }
 
+let refreshPromise = null;
+
+async function refreshAccessToken() {
+    if (!state.refreshToken) {
+        return false;
+    }
+
+    if (refreshPromise) {
+        return refreshPromise;
+    }
+
+    refreshPromise = (async () => {
+        try {
+            const data = await apiClient.request({
+                endpoint: '/auth/refresh',
+                method: 'POST',
+                body: { refresh_token: state.refreshToken },
+                auth: false
+            });
+
+            state.token = data.access_token || data.token || null;
+            state.refreshToken = data.refresh_token || null;
+            if (state.token) {
+                saveSessionTokens(state.token, state.refreshToken);
+                return true;
+            }
+            return false;
+        } catch {
+            return false;
+        } finally {
+            refreshPromise = null;
+        }
+    })();
+
+    return refreshPromise;
+}
+
 async function apiRequest({ endpoint, method = 'GET', body = null, auth = true }) {
-    return apiClient.request({ endpoint, method, body, auth });
+    pendingRequests += 1;
+    setLoading(true);
+    try {
+        return await apiClient.request({ endpoint, method, body, auth });
+    } catch (error) {
+        if (auth && error?.status === 401) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                return apiClient.request({ endpoint, method, body, auth });
+            }
+            handleUnauthorized();
+        }
+        throw error;
+    } finally {
+        pendingRequests = Math.max(0, pendingRequests - 1);
+        setLoading(pendingRequests > 0);
+    }
 }
 
 function renderNavigation(role) {
@@ -340,12 +407,13 @@ async function fetchPublicSiteConfig() {
 }
 
 async function tryRestoreSession() {
-    const savedToken = readSavedToken();
-    if (!savedToken) {
+    const savedSession = readSavedSession();
+    if (!savedSession?.token) {
         return false;
     }
 
-    state.token = savedToken;
+    state.token = savedSession.token;
+    state.refreshToken = savedSession.refresh_token;
     try {
         const data = await apiRequest({ endpoint: '/auth/me' });
         await openAppForAccount(data.account);
@@ -744,7 +812,8 @@ function setupAuthForms() {
                 auth: false
             });
             state.token = data.token;
-            saveSessionToken(data.token);
+            state.refreshToken = data.refresh_token || null;
+            saveSessionTokens(state.token, state.refreshToken);
             showNotification('Login realizado com sucesso.', 'success');
             await openAppForAccount(data.account);
             event.target.reset();
@@ -768,7 +837,8 @@ function setupAuthForms() {
                 auth: false
             });
             state.token = data.token;
-            saveSessionToken(data.token);
+            state.refreshToken = data.refresh_token || null;
+            saveSessionTokens(state.token, state.refreshToken);
             showNotification('Login admin realizado.', 'success');
             await openAppForAccount(data.account);
             event.target.reset();

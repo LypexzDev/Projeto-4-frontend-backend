@@ -1,17 +1,21 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.core.security import (
-    create_access_token,
+    create_token_pair,
     decode_access_token,
+    decode_refresh_token,
     hash_password,
+    now_utc,
     verify_legacy_pbkdf2_password,
     verify_password,
 )
-from app.db.models import Account, User
+from app.db.models import Account, RefreshToken, User
 from app.schemas.auth import LoginPayload, RegisterUserPayload
 
 
@@ -51,6 +55,40 @@ def _verify_account_password(db: Session, account: Account, password: str) -> bo
         return valid
 
     return verify_password(password, account.password_hash)
+
+
+def _to_aware_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _store_refresh_token(db: Session, account_id: int, jti: str, expires_at: datetime) -> None:
+    db.add(
+        RefreshToken(
+            account_id=account_id,
+            jti=jti,
+            expires_at=expires_at,
+            revoked=False,
+        )
+    )
+
+
+def _cleanup_expired_refresh_tokens(db: Session) -> None:
+    now = now_utc()
+    db.query(RefreshToken).filter(RefreshToken.expires_at < now).delete(synchronize_session=False)
+
+
+def _issue_token_bundle(db: Session, account: Account) -> dict:
+    pair = create_token_pair(account.id, account.role)
+    _store_refresh_token(db, account.id, pair["refresh_jti"], pair["refresh_expires_at"])
+    db.flush()
+    return {
+        "token": pair["access_token"],  # backward compatibility
+        "access_token": pair["access_token"],
+        "refresh_token": pair["refresh_token"],
+        "token_type": "bearer",
+    }
 
 
 def register_user(db: Session, payload: RegisterUserPayload) -> dict:
@@ -96,8 +134,55 @@ def login_by_role(db: Session, payload: LoginPayload, role: str) -> dict:
     if not _verify_account_password(db, account, payload.password):
         raise HTTPException(status_code=401, detail="Credenciais invalidas.")
 
-    token = create_access_token(account.id, account.role)
-    return {"token": token, "account": account_public_payload(account)}
+    _cleanup_expired_refresh_tokens(db)
+    bundle = _issue_token_bundle(db, account)
+    db.commit()
+    return {**bundle, "account": account_public_payload(account)}
+
+
+def refresh_session(db: Session, refresh_token: str) -> dict:
+    try:
+        payload = decode_refresh_token(refresh_token)
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail="Refresh token invalido ou expirado.") from exc
+
+    subject = payload.get("sub")
+    jti = payload.get("jti")
+    if not subject or not jti:
+        raise HTTPException(status_code=401, detail="Refresh token invalido ou expirado.")
+
+    try:
+        account_id = int(subject)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="Refresh token invalido ou expirado.")
+
+    account = db.get(Account, account_id)
+    if not account:
+        raise HTTPException(status_code=401, detail="Conta nao encontrada.")
+
+    stored = db.scalar(select(RefreshToken).where(RefreshToken.jti == str(jti)))
+    if not stored:
+        raise HTTPException(status_code=401, detail="Refresh token nao reconhecido.")
+    if stored.revoked:
+        raise HTTPException(status_code=401, detail="Refresh token revogado.")
+    if _to_aware_utc(stored.expires_at) < now_utc():
+        raise HTTPException(status_code=401, detail="Refresh token expirado.")
+
+    stored.revoked = True
+    db.add(stored)
+
+    bundle = _issue_token_bundle(db, account)
+    db.commit()
+    return {**bundle, "account": account_public_payload(account)}
+
+
+def logout_account(db: Session, account: Account) -> None:
+    db.execute(
+        update(RefreshToken)
+        .where(RefreshToken.account_id == account.id, RefreshToken.revoked.is_(False))
+        .values(revoked=True)
+    )
+    db.commit()
 
 
 def get_account_from_token(db: Session, token: str) -> Account:

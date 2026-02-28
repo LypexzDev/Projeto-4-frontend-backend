@@ -14,3 +14,6 @@ class LoginPayload(BaseModel):
     email: str = Field(min_length=5, max_length=120)
     password: str = Field(min_length=6, max_length=100)
 
+
+class RefreshTokenPayload(BaseModel):
+    refresh_token: str = Field(min_length=20)

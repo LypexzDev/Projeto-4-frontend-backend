@@ -27,13 +27,19 @@ def test_register_login_and_me(client):
     )
     assert login_response.status_code == 200
     token = login_response.json()["token"]
+    refresh_token = login_response.json()["refresh_token"]
     assert token
+    assert refresh_token
 
     me_response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert me_response.status_code == 200
     me_data = me_response.json()["account"]
     assert me_data["email"] == email
     assert me_data["role"] == "user"
+
+    refresh_response = client.post("/auth/refresh", json={"refresh_token": refresh_token})
+    assert refresh_response.status_code == 200
+    assert refresh_response.json().get("access_token")
 
 
 def test_admin_can_login_and_create_product(client):
@@ -53,4 +59,3 @@ def test_admin_can_login_and_create_product(client):
     data = create_response.json()
     assert data["nome"] == "Produto Admin"
     assert data["preco"] == 29.9
-

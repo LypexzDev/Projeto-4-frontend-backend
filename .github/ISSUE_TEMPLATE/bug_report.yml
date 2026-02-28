@@ -1,0 +1,50 @@
+name: Bug report
+description: Reportar erro de funcionamento
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Obrigado por abrir um bug. Preencha os campos para facilitar a reproducao.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Resumo
+      description: O que aconteceu?
+      placeholder: Descreva o problema de forma objetiva.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      description: Informe o fluxo exato
+      placeholder: |
+        1. Acesse ...
+        2. Clique em ...
+        3. Erro ...
+    validations:
+      required: true
+  - type: input
+    id: expected
+    attributes:
+      label: Comportamento esperado
+      placeholder: O que deveria acontecer?
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Ambiente
+      options:
+        - Local (Windows)
+        - Local (Linux/Mac)
+        - Docker
+        - Produção
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/prints
+      description: Cole stacktrace, request_id ou screenshots relevantes.

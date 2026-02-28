@@ -50,11 +50,14 @@
 
             const payload = await parseApiPayload(response);
             if (!response.ok) {
-                if (response.status === 401 && auth) {
-                    onUnauthorized();
-                }
                 const message = payload?.detail || `Erro ${response.status}.`;
-                throw new Error(message);
+                const error = new Error(message);
+                error.status = response.status;
+                error.payload = payload;
+                if (response.status === 401 && auth) {
+                    onUnauthorized(error);
+                }
+                throw error;
             }
 
             onStatusChange(true);
@@ -69,4 +72,3 @@
 
     global.createLojaApiClient = createLojaApiClient;
 })(window);
-

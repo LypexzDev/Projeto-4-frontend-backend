@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.db.models import Account
@@ -18,7 +18,23 @@ def extract_token(authorization: str | None = Header(default=None)) -> str:
     return token.strip()
 
 
-def get_current_account(db: Session = Depends(get_db), token: str = Depends(extract_token)) -> Account:
+def get_current_account(
+    request: Request,
+    db: Session = Depends(get_db),
+    token: str = Depends(extract_token),
+) -> Account:
+    auth_payload = getattr(request.state, "auth_payload", None)
+    if isinstance(auth_payload, dict):
+        subject = auth_payload.get("sub")
+        try:
+            account_id = int(subject)
+        except (TypeError, ValueError):
+            account_id = None
+        if account_id:
+            account = db.get(Account, account_id)
+            if account:
+                return account
+
     return get_account_from_token(db, token)
 
 
@@ -34,4 +50,3 @@ def get_user_account(account: Account = Depends(get_current_account)) -> Account
     if not account.usuario_id:
         raise HTTPException(status_code=400, detail="Conta sem perfil vinculado.")
     return account
-

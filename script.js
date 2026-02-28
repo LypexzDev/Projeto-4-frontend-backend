@@ -1,9 +1,4 @@
 
-const API_BASE_URL = (() => {
-    const validProtocol = window.location.protocol === 'http:' || window.location.protocol === 'https:';
-    return validProtocol ? window.location.origin : 'http://127.0.0.1:8000';
-})();
-
 const SESSION_STORAGE_KEY = 'lojacontrol_session_v2';
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -19,6 +14,12 @@ const state = {
     siteConfig: {},
     productsCache: []
 };
+
+const apiClient = window.createLojaApiClient({
+    getToken: () => state.token,
+    onUnauthorized: () => handleUnauthorized(),
+    onStatusChange: (isOnline) => setApiStatus(isOnline)
+});
 
 const elements = {
     notification: document.getElementById('notification'),
@@ -228,18 +229,6 @@ function applySiteConfig(config) {
     });
 }
 
-async function parseApiPayload(response) {
-    const text = await response.text();
-    if (!text) {
-        return {};
-    }
-    try {
-        return JSON.parse(text);
-    } catch {
-        return {};
-    }
-}
-
 function handleUnauthorized() {
     resetClientState();
     clearSessionToken();
@@ -248,38 +237,7 @@ function handleUnauthorized() {
 }
 
 async function apiRequest({ endpoint, method = 'GET', body = null, auth = true }) {
-    const headers = {};
-    if (body !== null) {
-        headers['Content-Type'] = 'application/json';
-    }
-    if (auth && state.token) {
-        headers.Authorization = `Bearer ${state.token}`;
-    }
-
-    let response;
-    try {
-        response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            method,
-            headers,
-            body: body !== null ? JSON.stringify(body) : null
-        });
-    } catch (error) {
-        setApiStatus(false);
-        throw new Error('Falha de conexao com o servidor.');
-    }
-
-    const payload = await parseApiPayload(response);
-
-    if (!response.ok) {
-        if (response.status === 401 && auth) {
-            handleUnauthorized();
-        }
-        const message = payload?.detail || `Erro ${response.status}.`;
-        throw new Error(message);
-    }
-
-    setApiStatus(true);
-    return payload;
+    return apiClient.request({ endpoint, method, body, auth });
 }
 
 function renderNavigation(role) {

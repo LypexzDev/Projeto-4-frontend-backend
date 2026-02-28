@@ -1,31 +1,53 @@
-# Projeto 4 - Frontend + Backend (LojaControl)
+# LojaControl
 
-Aplicacao full stack para simulacao de loja com painel administrativo e area do cliente.
+[![CI](https://github.com/LypexzDev/Projeto-4-frontend-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/LypexzDev/Projeto-4-frontend-backend/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite&logoColor=white)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-## Funcionalidades
+Aplicacao full stack com painel administrativo e area do cliente para fluxo completo de loja: autenticacao, catalogo, pedidos e gestao.
 
-- Cadastro e login de usuarios
-- Login administrativo
-- Catalogo de produtos
-- Compra de produtos com controle de saldo
-- Recarga de saldo para usuarios
-- Listagem de pedidos (usuario e admin)
-- Configuracao visual basica do site
+## Destaques
+
+- Arquitetura backend modular (`routers`, `services`, `schemas`, `db`, `core`)
+- Persistencia com SQLite + SQLAlchemy
+- Autenticacao com JWT + hash seguro com `bcrypt`
+- Frontend consumindo API real com `fetch` via cliente dedicado
+- Testes automatizados com `pytest` + `TestClient`
+- CI no GitHub Actions
 
 ## Stack
 
-- Frontend: HTML, CSS, JavaScript
-- Backend: Python + FastAPI
-- Persistencia: arquivo JSON (`loja_db.json`)
+- Frontend: HTML5, CSS3, JavaScript
+- Backend: FastAPI
+- Database: SQLite
+- ORM: SQLAlchemy 2.x
+- Auth: JWT (`python-jose`) + `bcrypt`
+- Testes: `pytest`, `httpx`, `TestClient`
 
-## Estrutura do projeto
+## Estrutura
 
-- `index.html`: interface principal
-- `style.css`: estilos da aplicacao
-- `script.js`: logica do frontend
-- `testebackend.py`: API FastAPI e servicos
-- `loja_db.json`: base de dados local
-- `requirements.txt`: dependencias Python
+```text
+.
+|-- app/
+|   |-- api/
+|   |   |-- deps.py
+|   |   `-- routers/
+|   |-- core/
+|   |-- db/
+|   |-- schemas/
+|   `-- services/
+|-- tests/
+|-- apiClient.js
+|-- script.js
+|-- style.css
+|-- index.html
+|-- testebackend.py
+`-- requirements.txt
+```
+
+Documentacao tecnica: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 
 ## Como executar
 
@@ -42,27 +64,60 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-3. Subir o servidor:
+3. Subir a API:
 
 ```powershell
-python -m uvicorn testebackend:app --host 127.0.0.1 --port 8000
+python -m uvicorn testebackend:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-4. Acessar no navegador:
+4. Acessar:
 
 - App: `http://127.0.0.1:8000`
-- Docs da API: `http://127.0.0.1:8000/docs`
+- Swagger: `http://127.0.0.1:8000/docs`
 
-## Credenciais administrativas padrao
+## Testes
+
+```powershell
+pytest -q
+```
+
+## Configuracao de ambiente
+
+Copie `.env.example` e ajuste valores conforme seu ambiente.
+
+Variaveis disponiveis:
+
+- `LOJACONTROL_DATABASE_URL` (ex.: `sqlite:///C:/caminho/loja.db`)
+- `LOJACONTROL_JWT_SECRET`
+- `LOJACONTROL_JWT_ALGORITHM`
+- `LOJACONTROL_ACCESS_TOKEN_EXPIRE_MINUTES`
+- `LOJACONTROL_SKIP_LEGACY_IMPORT`
+- `LOJA_ADMIN_EMAIL`
+- `LOJA_ADMIN_PASSWORD`
+
+Credenciais admin padrao:
 
 - Email: `admin@lojacontrol.local`
 - Senha: `admin123`
 
-Voce pode alterar usando variaveis de ambiente:
+## Endpoints principais
 
-- `LOJA_ADMIN_EMAIL`
-- `LOJA_ADMIN_PASSWORD`
+- `POST /auth/register-user`
+- `POST /auth/login-user`
+- `POST /auth/login-admin`
+- `GET /auth/me`
+- `GET /shop/produtos`
+- `POST /shop/pedidos`
+- `GET /admin/resumo`
+- `POST /admin/produtos`
 
-## Objetivo
+## Roadmap
 
-Projeto de estudo para praticar integracao entre frontend e backend, autenticacao, CRUD e fluxo de compra.
+- [ ] Deploy em nuvem (Render/Railway)
+- [ ] Migrations com Alembic
+- [ ] Cobertura de testes maior (edge cases e autorizacao)
+- [ ] Pipeline com lint/format
+
+## Licenca
+
+Este projeto esta sob a licenca MIT. Veja [LICENSE](./LICENSE).

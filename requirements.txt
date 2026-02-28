@@ -1,2 +1,7 @@
 fastapi
 uvicorn[standard]
+sqlalchemy>=2.0.36
+python-jose[cryptography]>=3.3.0
+pytest>=8.3.3
+httpx>=0.28.1
+bcrypt>=5.0.0

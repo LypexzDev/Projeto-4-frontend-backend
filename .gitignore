@@ -5,5 +5,7 @@ __pycache__/
 *.pyd
 *.log
 *.tmp
+*.db
+.env
 .DS_Store
 Thumbs.db

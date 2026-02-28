@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LojaControl</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="cursor-spotlight" id="cursor-spotlight" aria-hidden="true"></div>
+    <div id="notification" class="notification hidden"></div>
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+
+    <section class="auth-shell" id="auth-shell">
+        <article class="auth-card interactive">
+            <p class="eyebrow" id="auth-tagline">Painel comercial e compras online</p>
+            <h1 id="auth-site-name">LojaControl</h1>
+            <p class="auth-subtitle" id="auth-subtitle">Entre com sua conta para comprar ou administrar o sistema.</p>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" type="button" data-auth-view="user-login">Login usuario</button>
+                <button class="auth-tab" type="button" data-auth-view="user-register">Cadastrar</button>
+                <button class="auth-tab" type="button" data-auth-view="admin-login">Login admin</button>
+            </div>
+
+            <form id="form-user-login" class="auth-view active">
+                <div class="input-group">
+                    <label for="login-user-email">E-mail</label>
+                    <input type="email" id="login-user-email" required placeholder="voce@email.com">
+                </div>
+                <div class="input-group">
+                    <label for="login-user-password">Senha</label>
+                    <input type="password" id="login-user-password" minlength="6" required placeholder="******">
+                </div>
+                <button type="submit" class="btn-primary">Entrar como usuario</button>
+            </form>
+
+            <form id="form-user-register" class="auth-view">
+                <div class="input-group">
+                    <label for="reg-user-name">Nome completo</label>
+                    <input type="text" id="reg-user-name" minlength="2" required placeholder="Ex: Ana Lima">
+                </div>
+                <div class="input-group">
+                    <label for="reg-user-email">E-mail</label>
+                    <input type="email" id="reg-user-email" required placeholder="ana@email.com">
+                </div>
+                <div class="input-group">
+                    <label for="reg-user-password">Senha</label>
+                    <input type="password" id="reg-user-password" minlength="6" required placeholder="Minimo 6 caracteres">
+                </div>
+                <div class="input-group">
+                    <label for="reg-user-balance">Saldo inicial (R$)</label>
+                    <input type="number" id="reg-user-balance" min="0" step="0.01" value="0">
+                </div>
+                <button type="submit" class="btn-primary">Criar conta</button>
+            </form>
+
+            <form id="form-admin-login" class="auth-view">
+                <div class="input-group">
+                    <label for="login-admin-email">E-mail admin</label>
+                    <input type="email" id="login-admin-email" required placeholder="admin@lojacontrol.local">
+                </div>
+                <div class="input-group">
+                    <label for="login-admin-password">Senha admin</label>
+                    <input type="password" id="login-admin-password" minlength="6" required placeholder="******">
+                </div>
+                <button type="submit" class="btn-primary">Entrar no admin</button>
+            </form>
+        </article>
+    </section>
+
+    <div class="app-shell hidden" id="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <span class="brand-pill">LC</span>
+                <div>
+                    <h2 id="brand-name">LojaControl</h2>
+                    <p id="brand-tagline">Painel comercial e compras online</p>
+                </div>
+            </div>
+
+            <nav class="nav-list" id="nav-list" aria-label="Navegacao principal"></nav>
+
+            <div class="sidebar-footer">
+                <div class="api-chip" id="api-chip">API conectada</div>
+                <button id="logout-btn" class="logout-btn" type="button">Sair</button>
+            </div>
+        </aside>
+
+        <div class="main-area">
+            <header class="main-header">
+                <div>
+                    <p class="eyebrow" id="header-eyebrow">Sistema</p>
+                    <h1 id="header-title">Painel</h1>
+                </div>
+                <div class="header-actions">
+                    <span id="session-chip" class="session-chip">Sessao</span>
+                    <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">Menu</button>
+                </div>
+            </header>
+
+            <main class="content">
+                <section id="admin-dashboard" class="view">
+                    <article class="panel interactive">
+                        <h2>Visao geral</h2>
+                        <p class="subtitle">Indicadores em tempo real da operacao.</p>
+                        <div class="kpi-grid">
+                            <div class="kpi-card"><span>Usuarios</span><strong id="stat-usuarios">0</strong></div>
+                            <div class="kpi-card"><span>Produtos</span><strong id="stat-produtos">0</strong></div>
+                            <div class="kpi-card"><span>Pedidos</span><strong id="stat-pedidos">0</strong></div>
+                            <div class="kpi-card"><span>Faturamento</span><strong id="stat-faturamento">R$ 0,00</strong></div>
+                            <div class="kpi-card"><span>Saldo em contas</span><strong id="stat-saldo">R$ 0,00</strong></div>
+                        </div>
+                        <button id="refresh-dashboard" class="btn-secondary" type="button">Atualizar resumo</button>
+                    </article>
+                </section>
+
+                <section id="admin-products" class="view">
+                    <article class="panel">
+                        <div class="panel-header">
+                            <h2>Gerenciar produtos</h2>
+                            <button id="refresh-products" class="btn-secondary" type="button">Atualizar lista</button>
+                        </div>
+                        <form id="form-admin-product">
+                            <div class="input-group">
+                                <label for="admin-prod-name">Nome</label>
+                                <input type="text" id="admin-prod-name" minlength="2" required placeholder="Ex: Headset sem fio">
+                            </div>
+                            <div class="input-group">
+                                <label for="admin-prod-description">Descricao</label>
+                                <input type="text" id="admin-prod-description" placeholder="Detalhes do produto">
+                            </div>
+                            <div class="input-group">
+                                <label for="admin-prod-price">Preco (R$)</label>
+                                <input type="number" id="admin-prod-price" min="0.01" step="0.01" required placeholder="0.00">
+                            </div>
+                            <button type="submit" class="btn-primary">Criar produto</button>
+                        </form>
+                        <div id="admin-product-list" class="list-stack"></div>
+                    </article>
+                </section>
+
+                <section id="admin-orders" class="view">
+                    <article class="panel">
+                        <div class="panel-header">
+                            <h2>Pedidos realizados</h2>
+                            <button id="refresh-admin-orders" class="btn-secondary" type="button">Atualizar pedidos</button>
+                        </div>
+                        <ul id="admin-orders-list" class="clean-list"></ul>
+                    </article>
+                </section>
+
+                <section id="admin-users" class="view">
+                    <article class="panel">
+                        <div class="panel-header">
+                            <h2>Usuarios cadastrados</h2>
+                            <button id="refresh-admin-users" class="btn-secondary" type="button">Atualizar usuarios</button>
+                        </div>
+                        <ul id="admin-users-list" class="clean-list"></ul>
+                    </article>
+                </section>
+
+                <section id="admin-site" class="view">
+                    <article class="panel">
+                        <h2>Editar visual do site</h2>
+                        <p class="subtitle">Altere textos e cores do sistema em tempo real.</p>
+                        <form id="form-site-config">
+                            <div class="input-group">
+                                <label for="site-name">Nome do site</label>
+                                <input type="text" id="site-name" minlength="2" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="site-tagline">Tagline</label>
+                                <input type="text" id="site-tagline" minlength="2" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="site-hero-title">Titulo principal</label>
+                                <input type="text" id="site-hero-title" minlength="2" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="site-hero-subtitle">Subtitulo principal</label>
+                                <input type="text" id="site-hero-subtitle" minlength="2" required>
+                            </div>
+                            <div class="inline-inputs">
+                                <div class="input-group">
+                                    <label for="site-accent-color">Cor primaria</label>
+                                    <input type="color" id="site-accent-color" required>
+                                </div>
+                                <div class="input-group">
+                                    <label for="site-highlight-color">Cor secundaria</label>
+                                    <input type="color" id="site-highlight-color" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary">Salvar configuracao</button>
+                        </form>
+                    </article>
+                </section>
+
+                <section id="user-shop" class="view">
+                    <article class="panel">
+                        <h2 id="shop-title">Loja online</h2>
+                        <p class="subtitle" id="shop-subtitle">Navegue pelos produtos e finalize sua compra.</p>
+                        <div class="shop-layout">
+                            <div id="shop-products" class="product-grid"></div>
+                            <aside class="cart-box interactive">
+                                <h3>Carrinho</h3>
+                                <ul id="cart-items" class="clean-list"></ul>
+                                <p class="cart-total">Total: <strong id="cart-total-value">R$ 0,00</strong></p>
+                                <button id="checkout-btn" class="btn-primary" type="button">Finalizar compra</button>
+                            </aside>
+                        </div>
+                    </article>
+                </section>
+
+                <section id="user-orders" class="view">
+                    <article class="panel">
+                        <div class="panel-header">
+                            <h2>Minhas compras</h2>
+                            <button id="refresh-user-orders" class="btn-secondary" type="button">Atualizar compras</button>
+                        </div>
+                        <ul id="user-orders-list" class="clean-list"></ul>
+                    </article>
+                </section>
+
+                <section id="user-profile" class="view">
+                    <article class="panel">
+                        <h2>Meu perfil</h2>
+                        <div class="profile-grid">
+                            <div class="profile-item"><span>Nome</span><strong id="profile-name">-</strong></div>
+                            <div class="profile-item"><span>E-mail</span><strong id="profile-email">-</strong></div>
+                            <div class="profile-item"><span>Saldo</span><strong id="profile-balance">R$ 0,00</strong></div>
+                        </div>
+                        <form id="form-recarga">
+                            <div class="input-group">
+                                <label for="recarga-valor">Adicionar saldo (R$)</label>
+                                <input type="number" id="recarga-valor" min="1" step="0.01" required placeholder="50.00">
+                            </div>
+                            <button type="submit" class="btn-primary">Adicionar saldo</button>
+                        </form>
+                    </article>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

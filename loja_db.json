@@ -1,0 +1,99 @@
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "nome": "Felipe Cardoso De Amorim",
+      "email": "felipecardoso1328@gmail.com",
+      "saldo": 5000.0
+    },
+    {
+      "id": 2,
+      "nome": "jaozin",
+      "email": "jotinha@gmail.com",
+      "saldo": 300.0
+    },
+    {
+      "id": 3,
+      "nome": "Cliente Teste",
+      "email": "user1772248084@example.com",
+      "saldo": 80.1
+    },
+    {
+      "id": 4,
+      "nome": "felipex",
+      "email": "lipe@gmail.com",
+      "saldo": 6260.2
+    }
+  ],
+  "produtos": [
+    {
+      "id": 1,
+      "nome": "Mouse Gamer",
+      "preco": 150.0
+    },
+    {
+      "id": 2,
+      "nome": "Produto Teste 1772248084",
+      "descricao": "Smoke test",
+      "preco": 19.9
+    }
+  ],
+  "pedidos": [
+    {
+      "id": 1,
+      "usuario_id": 3,
+      "produtos_ids": [
+        2
+      ],
+      "total": 19.9,
+      "created_at": "2026-02-28 00:08:04"
+    },
+    {
+      "id": 2,
+      "usuario_id": 4,
+      "produtos_ids": [
+        2,
+        2
+      ],
+      "total": 39.8,
+      "created_at": "2026-02-28 00:11:45"
+    }
+  ],
+  "contas": [
+    {
+      "id": 1,
+      "nome": "Administrador",
+      "email": "admin@lojacontrol.local",
+      "role": "admin",
+      "usuario_id": null,
+      "salt": "7a1436ec748cb3443a1c7256a1d12b39",
+      "password_hash": "55adca1ae53a8b32b0b837b0a87ee1b56f68d89b4863e9faa4ddc5a79add8c5f"
+    },
+    {
+      "id": 2,
+      "nome": "Cliente Teste",
+      "email": "user1772248084@example.com",
+      "role": "user",
+      "usuario_id": 3,
+      "salt": "b5d05d53ec94da5931325323da15d44a",
+      "password_hash": "d204a1ac902e6d9e47fe0b012319d8a71daa097870c2c5ff9e285633ce596848"
+    },
+    {
+      "id": 3,
+      "nome": "felipex",
+      "email": "lipe@gmail.com",
+      "role": "user",
+      "usuario_id": 4,
+      "salt": "7a6a1901aca85954d09a6c89fc7e4488",
+      "password_hash": "00aef995985fa222be8ac22f56ec6835cab9d33fe0de117e9017b4e2c15885bf"
+    }
+  ],
+  "site_config": {
+    "site_name": "LojaControl",
+    "tagline": "Painel comercial e compras online",
+    "hero_title": "Gestao em tempo real",
+    "hero_subtitle": "Um sistema unico para admin e clientes.",
+    "accent_color": "#1ec8a5",
+    "highlight_color": "#1ea4d8"
+  }
+}

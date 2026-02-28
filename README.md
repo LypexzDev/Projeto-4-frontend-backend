@@ -102,9 +102,12 @@ Principais variaveis:
 - `LOJACONTROL_JWT_SECRET`
 - `LOJACONTROL_ACCESS_TOKEN_EXPIRE_MINUTES`
 - `LOJACONTROL_REFRESH_TOKEN_EXPIRE_DAYS`
+- `LOJACONTROL_REFRESH_COOKIE_NAME`
 - `LOJACONTROL_CORS_ORIGINS`
 - `LOJACONTROL_RATE_LIMIT_*`
 - `LOJACONTROL_AUTO_CREATE_SCHEMA`
+
+Em produção, a aplicação bloqueia bootstrap com configuração insegura (secret fraco, CORS com `*`, senha admin padrão ou schema auto-create habilitado).
 
 ## Migrations Alembic
 
@@ -147,6 +150,7 @@ pytest --cov=app --cov-report=term-missing
 - `POST /auth/login-user`
 - `POST /auth/login-admin`
 - `POST /auth/refresh`
+- `GET /health`
 - `GET /shop/produtos/paginated`
 - `GET /admin/usuarios/paginated`
 - `GET /admin/pedidos/paginated`
@@ -160,9 +164,13 @@ curl -X POST http://127.0.0.1:8000/auth/login-admin \
 ```
 
 ```bash
-curl -X POST http://127.0.0.1:8000/auth/refresh \
+curl -c cookies.txt -X POST http://127.0.0.1:8000/auth/login-admin \
   -H "Content-Type: application/json" \
-  -d '{"refresh_token":"SEU_REFRESH_TOKEN"}'
+  -d '{"email":"admin@lojacontrol.local","password":"admin123"}'
+```
+
+```bash
+curl -b cookies.txt -X POST http://127.0.0.1:8000/auth/refresh
 ```
 
 ## Deploy

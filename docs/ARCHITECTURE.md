@@ -15,7 +15,7 @@ O backend segue um modelo de camadas para manter responsabilidades separadas:
 1. Usuario/admin faz login.
 2. Backend valida senha com hash (`passlib+bcrypt`) ou hash legado PBKDF2.
 3. API gera `access_token` (JWT curto) e `refresh_token` (JWT longo).
-4. O refresh token e armazenado no banco com `jti`, expiracao e estado de revogacao.
+4. O refresh token e salvo em cookie HttpOnly (`/auth`) e também persistido no banco com `jti` e estado de revogacao.
 5. Requisicoes protegidas usam `Authorization: Bearer <access_token>`.
 6. Middleware adiciona contexto de autenticacao (`request.state.auth_payload`).
 7. Dependencias (`deps.py`) reforcam autorizacao por role (`admin` ou `user`).
@@ -44,4 +44,4 @@ O backend segue um modelo de camadas para manter responsabilidades separadas:
 - `apiClient.js` centraliza comunicacao HTTP.
 - `script.js` implementa estado da UI e fluxo das telas.
 - A app consome endpoints reais do backend FastAPI.
-- Quando `access_token` expira, frontend usa `refresh_token` para renovar sessao.
+- Quando `access_token` expira, frontend chama `/auth/refresh` e o backend usa o cookie HttpOnly para renovar sessao.

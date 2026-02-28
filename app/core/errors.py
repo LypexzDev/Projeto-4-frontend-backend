@@ -20,6 +20,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail, "request_id": request_id},
+            headers={"X-Request-ID": request_id or ""},
         )
 
     @app.exception_handler(RequestValidationError)
@@ -36,6 +37,7 @@ def register_exception_handlers(app: FastAPI) -> None:
                 "errors": exc.errors(),
                 "request_id": request_id,
             },
+            headers={"X-Request-ID": request_id or ""},
         )
 
     @app.exception_handler(Exception)
@@ -51,5 +53,5 @@ def register_exception_handlers(app: FastAPI) -> None:
                 "detail": "Erro interno do servidor.",
                 "request_id": request_id,
             },
+            headers={"X-Request-ID": request_id or ""},
         )
-

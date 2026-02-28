@@ -7,7 +7,6 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
 
 const state = {
     token: null,
-    refreshToken: null,
     account: null,
     currentRole: null,
     currentView: null,
@@ -152,8 +151,8 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-function saveSessionTokens(token, refreshToken) {
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ token, refresh_token: refreshToken || null }));
+function saveSessionToken(token) {
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ token }));
 }
 
 function readSavedSession() {
@@ -164,8 +163,7 @@ function readSavedSession() {
         }
         const parsed = JSON.parse(raw);
         return {
-            token: parsed?.token || null,
-            refresh_token: parsed?.refresh_token || null
+            token: parsed?.token || null
         };
     } catch {
         return null;
@@ -178,7 +176,6 @@ function clearSessionToken() {
 
 function resetClientState() {
     state.token = null;
-    state.refreshToken = null;
     state.account = null;
     state.currentRole = null;
     state.currentView = null;
@@ -253,10 +250,6 @@ function handleUnauthorized() {
 let refreshPromise = null;
 
 async function refreshAccessToken() {
-    if (!state.refreshToken) {
-        return false;
-    }
-
     if (refreshPromise) {
         return refreshPromise;
     }
@@ -266,14 +259,13 @@ async function refreshAccessToken() {
             const data = await apiClient.request({
                 endpoint: '/auth/refresh',
                 method: 'POST',
-                body: { refresh_token: state.refreshToken },
+                body: null,
                 auth: false
             });
 
             state.token = data.access_token || data.token || null;
-            state.refreshToken = data.refresh_token || null;
             if (state.token) {
-                saveSessionTokens(state.token, state.refreshToken);
+                saveSessionToken(state.token);
                 return true;
             }
             return false;
@@ -413,7 +405,6 @@ async function tryRestoreSession() {
     }
 
     state.token = savedSession.token;
-    state.refreshToken = savedSession.refresh_token;
     try {
         const data = await apiRequest({ endpoint: '/auth/me' });
         await openAppForAccount(data.account);
@@ -812,8 +803,7 @@ function setupAuthForms() {
                 auth: false
             });
             state.token = data.token;
-            state.refreshToken = data.refresh_token || null;
-            saveSessionTokens(state.token, state.refreshToken);
+            saveSessionToken(state.token);
             showNotification('Login realizado com sucesso.', 'success');
             await openAppForAccount(data.account);
             event.target.reset();
@@ -837,8 +827,7 @@ function setupAuthForms() {
                 auth: false
             });
             state.token = data.token;
-            state.refreshToken = data.refresh_token || null;
-            saveSessionTokens(state.token, state.refreshToken);
+            saveSessionToken(state.token);
             showNotification('Login admin realizado.', 'success');
             await openAppForAccount(data.account);
             event.target.reset();

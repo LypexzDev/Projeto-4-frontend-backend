@@ -27,9 +27,8 @@ def test_register_login_and_me(client):
     )
     assert login_response.status_code == 200
     token = login_response.json()["token"]
-    refresh_token = login_response.json()["refresh_token"]
     assert token
-    assert refresh_token
+    assert "lc_refresh_token=" in login_response.headers.get("set-cookie", "")
 
     me_response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert me_response.status_code == 200
@@ -37,9 +36,15 @@ def test_register_login_and_me(client):
     assert me_data["email"] == email
     assert me_data["role"] == "user"
 
-    refresh_response = client.post("/auth/refresh", json={"refresh_token": refresh_token})
+    refresh_response = client.post("/auth/refresh")
     assert refresh_response.status_code == 200
     assert refresh_response.json().get("access_token")
+
+    logout_response = client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+    assert logout_response.status_code == 200
+
+    refresh_after_logout = client.post("/auth/refresh")
+    assert refresh_after_logout.status_code == 401
 
 
 def test_admin_can_login_and_create_product(client):

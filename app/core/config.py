@@ -28,6 +28,7 @@ class Settings:
     rate_limit_requests: int
     rate_limit_window_seconds: int
     auto_create_schema: bool
+    refresh_cookie_name: str
 
 
 def _read_bool(value: str | None, default: bool = False) -> bool:
@@ -55,9 +56,14 @@ def get_settings() -> Settings:
 
     cors_origins = _read_csv_list(os.getenv("LOJACONTROL_CORS_ORIGINS"))
     if not cors_origins:
-        cors_origins = ["*"] if environment != "production" else []
+        cors_origins = [
+            "http://127.0.0.1:8000",
+            "http://localhost:8000",
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
+        ]
 
-    return Settings(
+    settings = Settings(
         project_root=PROJECT_ROOT,
         environment=environment,
         database_url=database_url,
@@ -75,4 +81,23 @@ def get_settings() -> Settings:
         rate_limit_requests=int(os.getenv("LOJACONTROL_RATE_LIMIT_REQUESTS", "120")),
         rate_limit_window_seconds=int(os.getenv("LOJACONTROL_RATE_LIMIT_WINDOW_SECONDS", "60")),
         auto_create_schema=_read_bool(os.getenv("LOJACONTROL_AUTO_CREATE_SCHEMA"), True),
+        refresh_cookie_name=os.getenv("LOJACONTROL_REFRESH_COOKIE_NAME", "lc_refresh_token"),
     )
+    validate_settings(settings)
+    return settings
+
+
+def validate_settings(settings: Settings) -> None:
+    if settings.environment != "production":
+        return
+
+    if settings.jwt_secret_key in {"change-this-secret", "change-this-secret-in-production"}:
+        raise RuntimeError("JWT secret inseguro para produção.")
+    if len(settings.jwt_secret_key) < 32:
+        raise RuntimeError("JWT secret muito curto para produção (mínimo 32 caracteres).")
+    if settings.admin_password == "admin123":
+        raise RuntimeError("Senha admin padrão não pode ser usada em produção.")
+    if not settings.cors_origins or "*" in settings.cors_origins:
+        raise RuntimeError("CORS em produção precisa de origens explícitas (sem '*').")
+    if settings.auto_create_schema:
+        raise RuntimeError("LOJACONTROL_AUTO_CREATE_SCHEMA deve ser 0 em produção.")

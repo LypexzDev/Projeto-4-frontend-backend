@@ -39,9 +39,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         response = None
         try:
             response = await call_next(request)
+            response.headers["X-Request-ID"] = getattr(request.state, "request_id", "")
             return response
         finally:
             duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+            auth_payload = getattr(request.state, "auth_payload", None)
+            user_id = auth_payload.get("sub") if isinstance(auth_payload, dict) else None
             logger.info(
                 "http_request",
                 extra={
@@ -50,6 +53,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                     "path": request.url.path,
                     "status_code": response.status_code if response else 500,
                     "duration_ms": duration_ms,
+                    "user_id": user_id,
                 },
             )
 
@@ -86,7 +90,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 return JSONResponse(
                     status_code=429,
                     content={"detail": "Muitas requisicoes. Tente novamente em instantes."},
-                    headers={"Retry-After": str(self.window_seconds)},
+                    headers={
+                        "Retry-After": str(self.window_seconds),
+                        "X-Request-ID": getattr(request.state, "request_id", ""),
+                    },
                 )
 
             timestamps.append(now)

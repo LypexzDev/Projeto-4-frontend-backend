@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -13,3 +14,8 @@ router = APIRouter(tags=["site"])
 def get_site_config(db: Session = Depends(get_db)):
     return admin_service.get_site_config(db)
 
+
+@router.get("/health", tags=["site"])
+def healthcheck(db: Session = Depends(get_db)):
+    db.execute(text("SELECT 1"))
+    return {"status": "ok"}

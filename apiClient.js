@@ -41,6 +41,7 @@
                 response = await fetch(`${baseUrl}${endpoint}`, {
                     method,
                     headers,
+                    credentials: 'include',
                     body: body !== null ? JSON.stringify(body) : null
                 });
             } catch {

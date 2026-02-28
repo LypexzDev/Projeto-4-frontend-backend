@@ -38,6 +38,10 @@ class JsonLogFormatter(logging.Formatter):
         if duration_ms is not None:
             payload["duration_ms"] = duration_ms
 
+        user_id = getattr(record, "user_id", None)
+        if user_id is not None:
+            payload["user_id"] = user_id
+
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
 
@@ -69,4 +73,3 @@ def configure_logging(settings: Settings) -> None:
 
     logger.addHandler(stream_handler)
     logger.addHandler(file_handler)
-
